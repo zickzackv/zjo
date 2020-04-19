@@ -43,4 +43,15 @@ pub fn main() anyerror!void {
         std.debug.warn("arg: {}\n", .{arg});
     }
 
+fn fromEqual(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
+    var js = std.json.Value{ .Object = std.json.ObjectMap.init(allocator) };
+    var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
+    var key = segments.next().?;
+    var value = segments.rest();
+
+    _ = try js.Object.put(key, std.json.Value{ .String = value });
+
+    return js;
+}
+
 }
