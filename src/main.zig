@@ -29,6 +29,17 @@ fn readArgs(alloc: *std.mem.Allocator) ![][]u8 {
     return args;
 }
 
+/// toy function!
+fn createJson(allocator: *std.mem.Allocator) !std.json.Value {
+    var value = std.json.Value{ .Object = std.json.ObjectMap.init(allocator) };
+    _ = try value.Object.put("String", std.json.Value{ .String = "This is a String" });
+    _ = try value.Object.put("Integer", std.json.Value{ .Integer = @intCast(i64, 10) });
+    _ = try value.Object.put("Float", std.json.Value{ .Float = 3.14 });
+
+    return value;
+}
+
+
 pub fn main() anyerror!void {
     // create allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -42,6 +53,11 @@ pub fn main() anyerror!void {
     for (args[1..]) |arg| {
         std.debug.warn("arg: {}\n", .{arg});
     }
+
+    var js = try createJson(allocator);
+    var writer = std.json.writeStream(std.io.getStdOut().outStream(), 10);
+    try writer.emitJson(js);
+}
 
 fn fromEqual(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
     var js = std.json.Value{ .Object = std.json.ObjectMap.init(allocator) };
