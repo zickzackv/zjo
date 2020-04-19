@@ -19,7 +19,8 @@ fn readStdin(alloc: *std.mem.Allocator) ![]u8 {
     return input_buffer.toOwnedSlice();
 }
 
-fn read_args(alloc: *std.mem.Allocator) ![][]u8 {
+/// Returning the unprocessed argument from the command line
+fn readArgs(alloc: *std.mem.Allocator) ![][]u8 {
     const args = std.process.argsAlloc(alloc) catch |err| {
         std.debug.warn("Out of memory: {}\n", .{err});
         return error.OutOfMemory;
@@ -34,8 +35,8 @@ pub fn main() anyerror!void {
     defer arena.deinit();
     const allocator = &arena.allocator;
 
-    var args = try read_args(allocator);
-    var x = try read_stdin(allocator);
+    var args = try readArgs(allocator);
+    var x = try readStdin(allocator);
 
     std.debug.warn("x: {}", .{x});
     for (args[1..]) |arg| {
