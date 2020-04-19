@@ -54,4 +54,13 @@ fn fromEqual(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
     return js;
 }
 
+const testing = std.testing;
+
+test "key value separation" {
+    const allocator = std.testing.allocator;
+    var v = try fromEqual(std.testing.allocator, "key=value");
+    defer v.Object.deinit();
+
+    v.dump();
+    std.debug.warn("value: {}\n", .{ v.Object.getValue("key") });
 }
