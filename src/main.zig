@@ -2,10 +2,12 @@ const std = @import("std");
 
 const stdin = &std.io.getStdIn().inStream();
 
-const BUFFERSIZE = 2048;
+const BUFFSIZE = 2048;
 
-fn read_stdin(alloc: *std.mem.Allocator) ![]u8 {
-    var read_buffer: [BUFFERSIZE]u8 = undefined;
+
+/// reading from stdin and returning an array of characters (string).
+fn readStdin(alloc: *std.mem.Allocator) ![]u8 {
+    var read_buffer: [BUFFSIZE]u8 = undefined;
     var input_buffer = std.ArrayList(u8).init(alloc);
     defer input_buffer.deinit();
 
