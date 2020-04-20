@@ -62,8 +62,16 @@ pub fn main() anyerror!void {
 fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
     var js = std.json.Value{ .Object = std.json.ObjectMap.init(allocator) };
     var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
-    var key = segments.next().?;
-    var value = segments.rest();
+    var key: []const u8 =  undefined;
+    var value: []const u8 = undefined;
+    
+    if (segments.next()) |k| {
+        key = k;
+    }
+
+    if (segments.next()) |v| {
+        value = v;
+    }
 
     _ = try js.Object.put(key, std.json.Value{ .String = value });
 
