@@ -59,7 +59,7 @@ pub fn main() anyerror!void {
     try writer.emitJson(js);
 }
 
-fn fromEqual(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
+fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
     var js = std.json.Value{ .Object = std.json.ObjectMap.init(allocator) };
     var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
     var key = segments.next().?;
@@ -74,9 +74,26 @@ const testing = std.testing;
 
 test "key value separation" {
     const allocator = std.testing.allocator;
-    var v = try fromEqual(std.testing.allocator, "key=value");
-    defer v.Object.deinit();
+    {
+        var value = try toHashMap(allocator, "key=value");
+        const object = value.Object;
+        defer value.Object.deinit();
 
-    v.dump();
-    std.debug.warn("value: {}\n", .{ v.Object.getValue("key") });
+        var buffer: [15]u8 = undefined;
+        var fbs = std.io.fixedBufferStream(&buffer);
+        try value.jsonStringify(.{}, fbs.outStream());
+        testing.expectEqualSlices(u8, fbs.getWritten(), "{\"key\":\"value\"}");
+    }
+
+    {
+        var value = try toHashMap(allocator, "key=value=value");
+        const object = value.Object;
+        defer value.Object.deinit();
+
+        var buffer: [30]u8 = undefined;
+        var fbs = std.io.fixedBufferStream(&buffer);
+        try value.jsonStringify(.{}, fbs.outStream());
+        testing.expectEqualSlices(u8, fbs.getWritten(), "{\"key\":\"value=value\"}");
+    }
+
 }
