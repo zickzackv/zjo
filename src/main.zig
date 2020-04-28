@@ -69,23 +69,61 @@ fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
         key = k;
     }
 
-    if (segments.next()) |v| {
-        value = v;
-    }
+    value = segments.rest();
 
     _ = try js.Object.put(key, std.json.Value{ .String = value });
 
     return js;
 }
 
+fn toArray(tree: *std.json.ValueTree, string: []u8) !void {
+    var array = tree.root;
+    return;
+}
+
+
 const testing = std.testing;
+const assert = std.debug.assert;
+
+
+test "allocate root element" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+
+    {
+        const jsonDoc = std.json.ValueTree {
+            .arena = arena,
+            .root  = @as(std.json.Value, .Null)
+        };
+
+        // only works because Value is a tagged union.
+        assert(@enumToInt(jsonDoc.root) == 0);        
+    }
+
+    {
+        const jsonDoc = std.json.ValueTree {
+            .arena = arena,
+            .root  = std.json.Value{ .Bool = true }
+        };
+        assert(@enumToInt(jsonDoc.root) == 1);        
+    }
+
+    {
+        const jsDoc = std.json.ValueTree {
+            .arena = arena,
+            .root = std.json.Value{ .Array = std.ArrayList(std.json.Value).init(std.heap.page_allocator) }
+        };
+        
+    }
+}
+
 
 test "key value separation" {
     const allocator = std.testing.allocator;
     {
         var value = try toHashMap(allocator, "key=value");
-        const object = value.Object;
         defer value.Object.deinit();
+        const object = value.Object;
 
         var buffer: [15]u8 = undefined;
         var fbs = std.io.fixedBufferStream(&buffer);
