@@ -47,16 +47,25 @@ pub fn main() anyerror!void {
     const allocator = &arena.allocator;
 
     var args = try readArgs(allocator);
-    var x = try readStdin(allocator);
+   //var x = try readStdin(allocator);
 
-    std.debug.warn("x: {}", .{x});
+    //std.debug.warn("x: {}", .{x});
     for (args[1..]) |arg| {
         std.debug.warn("arg: {}\n", .{arg});
     }
+    
+    var jsDoc = std.json.ValueTree{
+        .arena = arena,
+        .root = std.json.Value{ .Array = std.json.Array.init(allocator) }
+    };
+            
+    try toArray(&jsDoc, "literal String");
 
     var js = try createJson(allocator);
     var writer = std.json.writeStream(std.io.getStdOut().outStream(), 10);
     try writer.emitJson(js);
+    try writer.emitJson(jsDoc.root);
+    
 }
 
 fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Value {
@@ -70,14 +79,17 @@ fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
     }
 
     value = segments.rest();
-
+    
     _ = try js.Object.put(key, std.json.Value{ .String = value });
 
     return js;
 }
 
-fn toArray(tree: *std.json.ValueTree, string: []u8) !void {
-    var array = tree.root;
+
+fn toArray(tree: *std.json.ValueTree, string: []const u8) !void {
+    var allocator = &tree.arena.allocator;
+    var value = std.json.Value{ .String = string };
+    _ = try tree.root.Array.append(value);
     return;
 }
 
@@ -113,7 +125,11 @@ test "allocate root element" {
             .arena = arena,
             .root = std.json.Value{ .Array = std.ArrayList(std.json.Value).init(std.heap.page_allocator) }
         };
-        
+
+        _ = try toArray(&jsDoc, "literal String");
+
+        jsDoc.root.dump();
+        std.debug.warn("TEST", .{});
     }
 }
 
