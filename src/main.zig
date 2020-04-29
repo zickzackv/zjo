@@ -101,6 +101,7 @@ const assert = std.debug.assert;
 test "allocate root element" {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
+    const allocator = &arena.allocator;
 
     {
         const jsonDoc = std.json.ValueTree {
@@ -121,14 +122,13 @@ test "allocate root element" {
     }
 
     {
-        const jsDoc = std.json.ValueTree {
+        var jsDoc = std.json.ValueTree {
             .arena = arena,
-            .root = std.json.Value{ .Array = std.ArrayList(std.json.Value).init(std.heap.page_allocator) }
+            .root = std.json.Value{ .Array = std.ArrayList(std.json.Value).init(allocator) }
         };
 
         _ = try toArray(&jsDoc, "literal String");
 
-        jsDoc.root.dump();
         std.debug.warn("TEST", .{});
     }
 }
