@@ -36,37 +36,11 @@ fn createArrayDocument(arena: *std.heap.ArenaAllocator) std.json.ValueTree {
     };
 }
 
-// fn createObjectDocument(arena: *std.heap.ArenaAllocator) std.json.ValueTree {
-//     return std.json.ValueTree{
-//         .arena = 
-//     }
-// }
-
-pub fn main() anyerror!void {
-    // create allocator
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = &arena.allocator;
-
-    var args = try readArgs(allocator);
-    for (args[1..]) |arg| {
-        std.debug.warn("arg: {}\n", .{arg});
-    }
-    
-    var jsDoc = createArrayDocument(&arena);
-            
-    try appendToArray(&jsDoc, "literal String");
-    try appendToArray(&jsDoc, "another String");
-
-    var outstream = std.io.getStdOut().outStream();
-    var writer = std.json.writeStream(outstream, 10);
-    var jsDoc2 = createArrayDocument(&arena);
-
-    try outstream.print("\n", .{});
-    try writer.emitJson(jsDoc.root);
-    try outstream.print("\n", .{});
-    try writer.emitJson(jsDoc2.root);
-    try outstream.print("\n", .{});
+fn createObjectDocument(arena: *std.heap.ArenaAllocator) std.json.ValueTree {
+    return std.json.ValueTree{
+        .arena = arena.*,
+        .root = std.json.Value{ .Object = std.json.ObjectMap.init(&arena.allocator) }
+    };
 }
 
 
@@ -89,10 +63,58 @@ fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
 
 
 fn appendToArray(tree: *std.json.ValueTree, string: []const u8) !void {
-    var allocator = &tree.arena.allocator;
     var value = std.json.Value{ .String = string };
     _ = try tree.root.Array.append(value);
     return;
+}
+
+fn appendToObject(tree: *std.json.ValueTree, keyValue: [] const u8) !void {
+
+    var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
+    var key: []const u8 =  undefined;
+    var value: []const u8 = undefined;
+    
+    if (segments.next()) |k| {
+        key = k;
+    }
+
+    value = segments.rest();
+    
+    _ = try tree.root.Object.put(key, std.json.Value{ .String = value });
+
+    return;
+}
+
+pub fn main() anyerror!void {
+    // create allocator
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = &arena.allocator;
+    var arrayDoc = createArrayDocument(&arena);
+    var objectDoc = createObjectDocument(&arena);
+    
+    var args = try readArgs(allocator);
+    for (args[1..]) |arg| {
+        try appendToObject(&objectDoc, arg);
+    }
+
+    
+//     try appendToArray(&arrayDoc, "literal String");
+//     try appendToArray(&arrayDoc, "another String");
+
+//     try appendToObject(&objectDoc, "key=value");
+//     try appendToObject(&objectDoc, "key2=ovalue");
+//     try appendToObject(&objectDoc, "key3=':ovalue'");
+//     try appendToObject(&objectDoc, "key4='oval=ue'");
+    
+//     var outstream = std.io.getStdOut().outStream();
+//     var writer = std.json.writeStream(outstream, 10);
+
+//     try outstream.print("\n", .{});
+//     try writer.emitJson(arrayDoc.root);
+//     try outstream.print("\n", .{});
+//     try writer.emitJson(objectDoc.root);
+//     try outstream.print("\n", .{});
 }
 
 
@@ -161,3 +183,34 @@ test "key value separation" {
     }
 
 }
+
+test "parse json"  {
+    const allocator = std.testing.allocator;
+    var arena  = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    {
+        var p = std.json.Parser.init(&arena.allocator, false);
+        const s = " \"quoted=string\" ";
+
+        var j = try p.parse(s);
+        assert(j.root == .String);
+    }
+    {
+        var p = std.json.Parser.init(&arena.allocator, false);
+        const s = " 1231233 ";
+        var j = try p.parse(s);
+        assert(j.root == .Integer);
+    }
+}
+    
+// test "read stdin and parse" {
+//     const allocator = std.teting.allocator;
+//     var arena = std.heap.ArenaAlloctor.init(allocator);
+//     defer arena.deinit();
+
+//     {
+
+    
+
+// }
