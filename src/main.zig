@@ -15,33 +15,32 @@ var a = ArenaAllocator.init(std.heap.page_allocator);
 const Document = union(enum) {
     const Self = @This();
     
-    array: ValueTree,
-    object: ValueTree,
+    array: Value,
+    object: Value,
 
     pub fn array_init() Self {
         var value = Value{ .Array = std.json.Array.init(&a.allocator) };
         return Document {
-            .array = ValueTree {
-                .arena = a,
-                .root = value
-            }
+            .array = value
         };
     }
 
     pub fn object_init() Self {
         var value = Value{ .Object = std.json.ObjectMap.init(&a.allocator) };
         return Document{
-            .object = ValueTree {
-                .arena = a,
-                .root = value 
-            }
+            .object = value
         };
     }
 
     pub fn push_element(self: *Document, string: []u8) !void {
         switch (self.*) {
-            Self.array => |array| try appendToArray(&array, string),
-            Self.object => |object| try appendToObject(&object, string),
+            Self.array => |*array| {
+                var value = Value{ .String = string };
+                _ = try array.Array.append(value);
+            },
+            Self.object => |*object|{
+                unreachable;
+            },
             else => unreachable
         }
     }
@@ -148,6 +147,9 @@ pub fn main() anyerror!void {
 //        try document02.push_element(arg);
     }
 
+    var outstream = std.io.getStdOut().outStream();
+    var writer = std.json.writeStream(outstream, 10);
+    try writer.emitJson(document01.array);
     
 //     try appendToArray(&arrayDoc, "literal String");
 //     try appendToArray(&arrayDoc, "another String");
