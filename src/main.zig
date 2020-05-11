@@ -27,7 +27,8 @@ const Document = union(enum) {
 
     pub fn object_init() Self {
         var value = Value{ .Object = std.json.ObjectMap.init(&a.allocator) };
-        return Document{
+        
+        return Self{
             .object = value
         };
     }
@@ -35,22 +36,40 @@ const Document = union(enum) {
     pub fn push_element(self: *Document, string: []u8) !void {
         switch (self.*) {
             Self.array => |*array| {
-                var value = Value{ .String = string };
-                _ = try array.Array.append(value);
+                try self.appendToArray(string);
             },
             Self.object => |*object|{
-                unreachable;
+                try self.appendToObject(string);
             },
             else => unreachable
         }
     }
+
+    fn appendToArray(self: *Self, string: []const u8) !void {
+        var value = std.json.Value{ .String = string };
+        _ = try self.array.Array.append(value);
+    }
+
+    fn appendToObject(self: *Self, keyValue: [] const u8) !void {
+
+        var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
+        var key: []const u8 =  undefined;
+        var value: []const u8 = undefined;
+        
+        if (segments.next()) |k| {
+            key = k;
+        }
+
+        value = segments.rest();
+        
+        _ = try self.object.Object.put(key, std.json.Value{ .String = value });
+
+        return;
+    }
+
+    
 };
 
-fn appendToArray(tree: *const std.json.ValueTree, string: []const u8) !void {
-    var value = std.json.Value{ .String = string };
-    _ = try tree.root.Array.append(value);
-    return;
-}
 
 
 
@@ -98,22 +117,6 @@ fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
 
 
 
-fn appendToObject(tree: *const std.json.ValueTree, keyValue: [] const u8) !void {
-
-    var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
-    var key: []const u8 =  undefined;
-    var value: []const u8 = undefined;
-    
-    if (segments.next()) |k| {
-        key = k;
-    }
-
-    value = segments.rest();
-    
-    _ = try tree.root.Object.put(key, std.json.Value{ .String = value });
-
-    return;
-}
 
 /// reading from stdin and returning an array of characters (string).
 fn readStdin(alloc: *Allocator) ![]u8 {
@@ -134,22 +137,20 @@ pub fn main() anyerror!void {
     // create allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    const allocator = &arena.allocator;
-    var arrayDoc = createArrayDocument(&arena);
-    var objectDoc = createObjectDocument(&arena);
 
     var document01 = Document.array_init();
     var document02 = Document.object_init();
 
-    var args = try readArgs(allocator);
+    var args = try readArgs(&a.allocator);
     for (args[1..]) |arg| {
         try document01.push_element(arg);
-//        try document02.push_element(arg);
+        try document02.push_element(arg);
     }
 
     var outstream = std.io.getStdOut().outStream();
     var writer = std.json.writeStream(outstream, 10);
     try writer.emitJson(document01.array);
+    try writer.emitJson(document02.object);
     
 //     try appendToArray(&arrayDoc, "literal String");
 //     try appendToArray(&arrayDoc, "another String");
