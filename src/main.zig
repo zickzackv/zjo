@@ -1,23 +1,59 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
+const ValueTree = std.json.ValueTree;
+const Value = std.json.Value;
 
 const stdin = &std.io.getStdIn().inStream();
 
 const BUFFSIZE = 2048;
 
+var a = ArenaAllocator.init(std.heap.page_allocator);
 
-/// reading from stdin and returning an array of characters (string).
-fn readStdin(alloc: *std.mem.Allocator) ![]u8 {
-    var read_buffer: [BUFFSIZE]u8 = undefined;
-    var input_buffer = std.ArrayList(u8).init(alloc);
-    defer input_buffer.deinit();
 
-    var read_size = try stdin.readAll(&read_buffer);
 
-    while (read_size > 0): (read_size = try stdin.readAll(&read_buffer)) {
-        try input_buffer.insertSlice(input_buffer.items.len, read_buffer[0..read_size]);
+const Document = union(enum) {
+    const Self = @This();
+    
+    array: ValueTree,
+    object: ValueTree,
+
+    pub fn array_init() Self {
+        var value = Value{ .Array = std.json.Array.init(&a.allocator) };
+        return Document {
+            .array = ValueTree {
+                .arena = a,
+                .root = value
+            }
+        };
     }
-    return input_buffer.toOwnedSlice();
+
+    pub fn object_init() Self {
+        var value = Value{ .Object = std.json.ObjectMap.init(&a.allocator) };
+        return Document{
+            .object = ValueTree {
+                .arena = a,
+                .root = value 
+            }
+        };
+    }
+
+    pub fn push_element(self: *Document, string: []u8) !void {
+        switch (self.*) {
+            Self.array => |array| try appendToArray(&array, string),
+            Self.object => |object| try appendToObject(&object, string),
+            else => unreachable
+        }
+    }
+};
+
+fn appendToArray(tree: *const std.json.ValueTree, string: []const u8) !void {
+    var value = std.json.Value{ .String = string };
+    _ = try tree.root.Array.append(value);
+    return;
 }
+
+
 
 /// Returning the unprocessed argument from the command line
 fn readArgs(alloc: *std.mem.Allocator) ![][]u8 {
@@ -62,13 +98,8 @@ fn toHashMap(allocator: *std.mem.Allocator, keyValue: [] const u8) !std.json.Val
 }
 
 
-fn appendToArray(tree: *std.json.ValueTree, string: []const u8) !void {
-    var value = std.json.Value{ .String = string };
-    _ = try tree.root.Array.append(value);
-    return;
-}
 
-fn appendToObject(tree: *std.json.ValueTree, keyValue: [] const u8) !void {
+fn appendToObject(tree: *const std.json.ValueTree, keyValue: [] const u8) !void {
 
     var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
     var key: []const u8 =  undefined;
@@ -85,6 +116,21 @@ fn appendToObject(tree: *std.json.ValueTree, keyValue: [] const u8) !void {
     return;
 }
 
+/// reading from stdin and returning an array of characters (string).
+fn readStdin(alloc: *Allocator) ![]u8 {
+    var read_buffer: [BUFFSIZE]u8 = undefined;
+    var input_buffer = std.ArrayList(u8).init(alloc);
+    defer input_buffer.deinit();
+
+    var read_size = try stdin.readAll(&read_buffer);
+
+    while (read_size > 0): (read_size = try stdin.readAll(&read_buffer)) {
+        try input_buffer.insertSlice(input_buffer.items.len, read_buffer[0..read_size]);
+    }
+    return input_buffer.toOwnedSlice();
+}
+
+
 pub fn main() anyerror!void {
     // create allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -92,10 +138,14 @@ pub fn main() anyerror!void {
     const allocator = &arena.allocator;
     var arrayDoc = createArrayDocument(&arena);
     var objectDoc = createObjectDocument(&arena);
-    
+
+    var document01 = Document.array_init();
+    var document02 = Document.object_init();
+
     var args = try readArgs(allocator);
     for (args[1..]) |arg| {
-        try appendToObject(&objectDoc, arg);
+        try document01.push_element(arg);
+//        try document02.push_element(arg);
     }
 
     
