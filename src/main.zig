@@ -132,85 +132,31 @@ pub fn main() anyerror!void {
 const testing = std.testing;
 const assert = std.debug.assert;
 
-
-test "allocate root element" {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = &arena.allocator;
-
-    {
-        const jsonDoc = std.json.ValueTree {
-            .arena = arena,
-            .root  = @as(std.json.Value, .Null)
-        };
-
-        // only works because Value is a tagged union.
-        assert(@enumToInt(jsonDoc.root) == 0);        
-    }
-
-    {
-        const jsonDoc = std.json.ValueTree {
-            .arena = arena,
-            .root  = std.json.Value{ .Bool = true }
-        };
-        assert(@enumToInt(jsonDoc.root) == 1);        
-    }
-
-    {
-        var jsDoc = std.json.ValueTree {
-            .arena = arena,
-            .root = std.json.Value{ .Array = std.ArrayList(std.json.Value).init(allocator) }
-        };
-
-        _ = try appendToArray(&jsDoc, "literal String");
-
-        std.debug.warn("TEST", .{});
-    }
-}
-
-
-test "key value separation" {
-    const allocator = std.testing.allocator;
-    {
-        var value = try toHashMap(allocator, "key=value");
-        defer value.Object.deinit();
-        const object = value.Object;
-
-        var buffer: [15]u8 = undefined;
-        var fbs = std.io.fixedBufferStream(&buffer);
-        try value.jsonStringify(.{}, fbs.outStream());
-        testing.expectEqualSlices(u8, fbs.getWritten(), "{\"key\":\"value\"}");
-    }
-
-    {
-        var value = try toHashMap(allocator, "key=value=value");
-        const object = value.Object;
-        defer value.Object.deinit();
-
-        var buffer: [30]u8 = undefined;
-        var fbs = std.io.fixedBufferStream(&buffer);
-        try value.jsonStringify(.{}, fbs.outStream());
-        testing.expectEqualSlices(u8, fbs.getWritten(), "{\"key\":\"value=value\"}");
-    }
-
-}
-
 test "parse json"  {
     const allocator = std.testing.allocator;
     var arena  = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
+    var p = std.json.Parser.init(&arena.allocator, false);
 
     {
-        var p = std.json.Parser.init(&arena.allocator, false);
-        const s = " \"quoted=string\" ";
-
+        defer p.reset();
+        const s = \\ "quoted=string"
+        ;
         var j = try p.parse(s);
         assert(j.root == .String);
     }
     {
-        var p = std.json.Parser.init(&arena.allocator, false);
-        const s = " 1231233 ";
+        defer p.reset();
+        const s = \\ 1231233
+        ;
         var j = try p.parse(s);
         assert(j.root == .Integer);
+    }
+    {
+        defer p.reset();
+        const s = \\ "123"
+        ;
+        var j = try p.parse(s);
+        assert(j.root == .String);
     }
 }
