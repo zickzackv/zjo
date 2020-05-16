@@ -45,6 +45,22 @@ const Document = union(enum) {
         }
     }
 
+    /// prints Document to stdout!
+    fn print(self: Self) !void {
+        var outstream = std.io.getStdOut().outStream();
+        var writer = std.json.writeStream(outstream, 10);
+
+        switch(self) {
+            Self.array => |array| {
+               _ = try writer.emitJson(array);
+            },
+            Self.object => |object| {
+                _ = try writer.emitJson(object);
+            }
+        }
+    }
+
+    /// adding elements to the array document
     fn appendToArray(self: *Self, string: []const u8) !void {
         var value = std.json.Value{ .String = string };
         _ = try self.array.Array.append(value);
@@ -67,6 +83,8 @@ const Document = union(enum) {
 
         return;
     }
+
+    
 };
 
 
@@ -110,10 +128,8 @@ pub fn main() anyerror!void {
         try document02.push_element(arg);
     }
 
-    var outstream = std.io.getStdOut().outStream();
-    var writer = std.json.writeStream(outstream, 10);
-    try writer.emitJson(document01.array);
-    try writer.emitJson(document02.object);
+    try document01.print();
+    try document02.print();
 }
 
 
