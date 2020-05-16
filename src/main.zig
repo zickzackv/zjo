@@ -48,8 +48,7 @@ const Document = union(enum) {
     }
 
     /// prints Document to stdout!
-    fn print(self: Self) !void {
-        var outstream = std.io.getStdOut().outStream();
+    fn print(self: Self, outstream: var) !void {
         var writer = std.json.writeStream(outstream, 10);
 
         switch(self) {
@@ -62,11 +61,20 @@ const Document = union(enum) {
         }
     }
 
+    /// prints Document to stdout!
+    fn printStdOut(self: Self) !void {
+        var outstream = std.io.getStdOut().outStream();
+        try self.print(outstream);
+    }
+
+
     /// String representation of the document
     /// caller ownes the string!
-    fn stringify(self: Self) []u8 {
-        var x = ArrayList(u8).init();
-
+    fn stringify(self: Self) ![]u8 {
+        var x = std.ArrayList(u8).init(&arena.allocator);
+        var stream = x.outStream();
+        var writer = std.json.writeStream(stream, 10);
+        _ = try self.print(stream);
         return x.toOwnedSlice();
     }
 
@@ -128,8 +136,11 @@ pub fn main() anyerror!void {
         try document02.push_element(arg);
     }
 
-    try document01.print();
-    try document02.print();
+    try document01.printStdOut();
+    try document02.printStdOut();
+    var x = try document01.stringify();
+    defer x.deinit();
+    std.debug.warn("ups: {}", .{ x });
 }
 
 
@@ -170,4 +181,5 @@ test "parse json"  {
         var j = try p.parse(s);
         assert(j.root == .String);
     }
+
 }
