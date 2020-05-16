@@ -4,9 +4,11 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 const ValueTree = std.json.ValueTree;
 const Value = std.json.Value;
 const stdin = &std.io.getStdIn().inStream();
+
+
 const BUFFSIZE = 2048;
 
-var a = ArenaAllocator.init(std.heap.page_allocator);
+var arena = ArenaAllocator.init(std.heap.page_allocator);
 
 ///Either array or object json document.
 const Document = union(enum) {
@@ -17,7 +19,7 @@ const Document = union(enum) {
 
     /// initialize as array document
     pub fn array_init() Self {
-        var value = Value{ .Array = std.json.Array.init(&a.allocator) };
+        var value = Value{ .Array = std.json.Array.init(&arena.allocator) };
         return Document {
             .array = value
         };
@@ -25,7 +27,7 @@ const Document = union(enum) {
 
     /// Initialize as object document
     pub fn object_init() Self {
-        var value = Value{ .Object = std.json.ObjectMap.init(&a.allocator) };
+        var value = Value{ .Object = std.json.ObjectMap.init(&arena.allocator) };
         
         return Self{
             .object = value
@@ -60,6 +62,14 @@ const Document = union(enum) {
         }
     }
 
+    /// String representation of the document
+    /// caller ownes the string!
+    fn stringify(self: Self) []u8 {
+        var x = ArrayList(u8).init();
+
+        return x.toOwnedSlice();
+    }
+
     /// adding elements to the array document
     fn appendToArray(self: *Self, string: []const u8) !void {
         var value = std.json.Value{ .String = string };
@@ -82,9 +92,7 @@ const Document = union(enum) {
         _ = try self.object.Object.put(key, std.json.Value{ .String = value });
 
         return;
-    }
-
-    
+    }    
 };
 
 
@@ -111,14 +119,10 @@ fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
 }
 
 pub fn main() anyerror!void {
-    // create allocator
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-
     var document01 = Document.array_init();
     var document02 = Document.object_init();
 
-    var args = try readArgs(&a.allocator);
+    var args = try readArgs(&arena.allocator);
     for (args[1..]) |arg| {
         try document01.push_element(arg);
         try document02.push_element(arg);
@@ -137,6 +141,13 @@ test "parse json"  {
     var arena  = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
     var p = std.json.Parser.init(&arena.allocator, false);
+
+    {
+        defer p.reset();
+        const s = \\""
+        ;
+        var j = try p.parse(s);
+    }
 
     {
         defer p.reset();
