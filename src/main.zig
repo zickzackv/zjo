@@ -8,13 +8,14 @@ const BUFFSIZE = 2048;
 
 var a = ArenaAllocator.init(std.heap.page_allocator);
 
-
+///Either array or object json document.
 const Document = union(enum) {
     const Self = @This();
     
     array: Value,
     object: Value,
 
+    /// initialize as array document
     pub fn array_init() Self {
         var value = Value{ .Array = std.json.Array.init(&a.allocator) };
         return Document {
@@ -22,6 +23,7 @@ const Document = union(enum) {
         };
     }
 
+    /// Initialize as object document
     pub fn object_init() Self {
         var value = Value{ .Object = std.json.ObjectMap.init(&a.allocator) };
         
@@ -29,8 +31,9 @@ const Document = union(enum) {
             .object = value
         };
     }
-
-    pub fn push_element(self: *Document, string: []u8) !void {
+    
+    /// Adds new element to the document
+    pub fn push_element(self: *Self, string: []u8) !void {
         switch (self.*) {
             Self.array => |*array| {
                 try self.appendToArray(string);
@@ -47,6 +50,7 @@ const Document = union(enum) {
         _ = try self.array.Array.append(value);
     }
 
+    /// adds new element to the object document
     fn appendToObject(self: *Self, keyValue: [] const u8) !void {
 
         var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
