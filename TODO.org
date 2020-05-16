@@ -1,0 +1,66 @@
+#+TODO: TODO(t) STARTED(s@/!) | DONE(d!) CANCELED(c@)
+
+* TODO Use arguments parser for argument parsing 
+  The are multiple argument parser to choose from. Choose wisely.
+* TODO Read in linewise from stdin
+  A test file contains a limited version of reading input from stdin
+  until a delimiter occurs. Start with that simple version.
+* STARTED STARED print document to stream
+  - State "STARTED"    from              [2020-05-16 Sat 22:15]
+  - State "STARED"     from "TODO"       [2020-05-16 Sat 22:08] \\
+    writing print funcntion for Document
+* TODO pr for json api changes
+  Found a simple regression in the +fn std.json.dump+ function. I do
+  not use this function anymore, but the version zig relead 0.6.0 does
+  not work until code is changed.
+* TODO access to struct within struct witout pointers
+  The first version of my document structure contained a 
+  field to an std.json.ValueTree object. Using this structure was not possible.
+  
+  Create a small sample zig file with e.g. the following code.
+
+  #+BEGIN_SRC zig
+    const Document = union(enum) {
+
+	array: ValueTree,
+	object: ValueTree,
+
+	const Self = @This();
+
+	/// this may lead to an type error.
+	/// needs checking
+	fn appendToArray(self: *Self, string: []const u8) !void {
+	    var value = std.json.Value{ .String = string };
+	    _ = try self.array.root.Array.append(value);
+	}
+    }
+  #+END_SRC
+* TODO Parsing json from parameters
+  When creating complex json documents one needs to cascade zjo calls. 
+  The following example
+
+  #+BEGIN_SRC bash
+  zjo abc=$(zjo -a a b c) '"123"'=$(zjo -a 1 2 3)
+  #+END_SRC
+
+  should produce the following object:
+
+  #+BEGIN_SRC json
+    { 
+	"abc" = [
+	    "a",
+	    "b",
+	    "c"
+	], 
+    	"123" = [
+	    1,
+	    2,
+	    3
+	]
+    }
+  #+END_SRC
+  
+* TODO Write more tests for document struct
+  - initializiation
+  - printing (could be hard with current api)
+  - append elements
