@@ -1,14 +1,18 @@
 #+TODO: TODO(t) STARTED(s@/!) | DONE(d!) CANCELED(c@)
 
+* TODO find out how to write one initializer functions instead of two
+  
+  #+BEGIN_SRC zig
+  // ...
+  pub fn array_init() Self {}  
+  pub fn object_init() Self {}
+  // ...
+  #+END_SRC
+
 * TODO Use arguments parser for argument parsing 
   The are multiple argument parser to choose from. Choose wisely.
-* TODO Read in linewise from stdin
-  A test file contains a limited version of reading input from stdin
-  until a delimiter occurs. Start with that simple version.
-* STARTED STARED print document to stream
-  - State "STARTED"    from              [2020-05-16 Sat 22:15]
-  - State "STARED"     from "TODO"       [2020-05-16 Sat 22:08] \\
-    writing print funcntion for Document
+* TODO implement strignify function
+  Should return an string representation of the document!
 * TODO pr for json api changes
   Found a simple regression in the +fn std.json.dump+ function. I do
   not use this function anymore, but the version zig relead 0.6.0 does
@@ -64,3 +68,13 @@
   - initializiation
   - printing (could be hard with current api)
   - append elements
+* DONE Read in linewise from stdin
+  - State "DONE"       from "TODO"       [2020-05-16 Sat 22:54]
+  A test file contains a limited version of reading input from stdin
+  until a delimiter occurs. Start with that simple version.
+
+* DONE STARED print document to stream
+  - State "DONE"       from "STARTED"    [2020-05-16 Sat 22:35]
+  - State "STARTED"    from              [2020-05-16 Sat 22:15]
+  - State "STARED"     from "TODO"       [2020-05-16 Sat 22:08] \\
+    writing print funcntion for Document
