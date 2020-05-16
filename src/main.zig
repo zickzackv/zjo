@@ -98,21 +98,17 @@ fn readArgs(alloc: *std.mem.Allocator) ![][]u8 {
     return args;
 }
 
+fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
+    var array = std.ArrayList([]u8).init(allocator);
+    var buffer : [BUFSIZ]u8 = undefined;
 
-/// reading from stdin and returning an array of characters (string).
-fn readStdin(alloc: *Allocator) ![]u8 {
-    var read_buffer: [BUFFSIZE]u8 = undefined;
-    var input_buffer = std.ArrayList(u8).init(alloc);
-    defer input_buffer.deinit();
-
-    var read_size = try stdin.readAll(&read_buffer);
-
-    while (read_size > 0): (read_size = try stdin.readAll(&read_buffer)) {
-        try input_buffer.insertSlice(input_buffer.items.len, read_buffer[0..read_size]);
+    while (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |line| {
+        var copy = try std.mem.dupe(allocator, u8, line);
+        _ =  try array.append(copy);
     }
-    return input_buffer.toOwnedSlice();
-}
 
+    return array;
+}
 
 pub fn main() anyerror!void {
     // create allocator
