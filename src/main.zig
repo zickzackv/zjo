@@ -12,14 +12,27 @@ const BUFFSIZE = 2048;
 var arena = ArenaAllocator.init(std.heap.page_allocator);
 
 ///Either array or object json document.
-const Document = union(enum) {
+const DocumentTag = enum {
+    array,
+    object
+};
+
+const Document = union(DocumentTag) {
     const Self = @This();
     
     array: Value,
     object: Value,
 
+    /// general init
+    pub fn init(x: DocumentTag) Self {
+        switch(x) {
+            DocumentTag.array => return array_init(),
+            DocumentTag.object => return object_init()
+        }
+    }
+
     /// initialize as array document
-    pub fn array_init() Self {
+    fn array_init() Self {
         var value = Value{ .Array = std.json.Array.init(&arena.allocator) };
         return Document {
             .array = value
@@ -27,7 +40,7 @@ const Document = union(enum) {
     }
 
     /// Initialize as object document
-    pub fn object_init() Self {
+    fn object_init() Self {
         var value = Value{ .Object = std.json.ObjectMap.init(&arena.allocator) };
         
         return Self{
@@ -142,7 +155,7 @@ pub fn main() anyerror!void {
         return;
     }
     
-    var document = if (cli.options.array) Document.array_init() else Document.object_init();
+    var document = if (cli.options.array) Document.init(.array) else Document.init(.object);
     for (cli.positionals) |arg| {
         _ = try document.push_element(arg);
     }

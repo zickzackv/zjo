@@ -1,12 +1,22 @@
 #+TODO: TODO(t) STARTED(s@/!) | DONE(d!) CANCELED(c@)
 
-* TODO find out how to write one initializer functions instead of two
+* DONE find out how to write one initializer functions instead of two
   
+  - State "DONE"       from "TODO"       [2020-05-25 Mon 00:16]
   #+BEGIN_SRC zig
   // ...
   pub fn array_init() Self {}  
   pub fn object_init() Self {}
   // ...
+  #+END_SRC
+
+  Splitt up the tagged union into an enum and an union and use literal
+  enums.
+  
+  #+BEGIN_SRC zig
+  const Tag = enum { array, object };
+  pub fn init(x: Tag) Self;
+  var y = init(.array);
   #+END_SRC
 
 * DONE Use zig-args
