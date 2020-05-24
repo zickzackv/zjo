@@ -9,7 +9,14 @@
   // ...
   #+END_SRC
 
-* TODO Adjust build to include zig-args
+* DONE Use zig-args
+  - State "DONE"       from "TODO"       [2020-05-24 Sun 23:50]
+  #+BEGIN_SRC zig
+  args = @import("args");
+  
+  #+END_SRC
+* DONE Adjust build to include zig-args
+  - State "DONE"       from "TODO"       [2020-05-24 Sun 22:33]
   The gurl project contains an example adding an external depency
   manually and with zpm. Use the manual way first. zig-args is the
   only dependency right now!

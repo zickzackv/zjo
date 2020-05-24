@@ -1,0 +1,9 @@
+converts its parameters into json documents.
+By default it will output object documents.
+
+-a, --array   - read all parameter and outputs a json array document
+
+-o, --object  - read all parameters as key values using '=' and ':' as
+                 key value seperator. outputs a json object document
+
+-h, --help    - prints this help message

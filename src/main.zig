@@ -5,6 +5,7 @@ const ValueTree = std.json.ValueTree;
 const Value = std.json.Value;
 const stdin = &std.io.getStdIn().inStream();
 
+const args = @import("args");
 
 const BUFFSIZE = 2048;
 
@@ -35,7 +36,7 @@ const Document = union(enum) {
     }
     
     /// Adds new element to the document
-    pub fn push_element(self: *Self, string: []u8) !void {
+    pub fn push_element(self: *Self, string: []const u8) !void {
         switch (self.*) {
             Self.array => |*array| {
                 try self.appendToArray(string);
@@ -47,7 +48,7 @@ const Document = union(enum) {
         }
     }
 
-    /// prints Document to stdout!
+    /// prints Document outstream
     fn print(self: Self, outstream: var) !void {
         var writer = std.json.writeStream(outstream, 10);
 
@@ -103,17 +104,6 @@ const Document = union(enum) {
     }    
 };
 
-
-/// Returning the unprocessed argument from the command line
-fn readArgs(alloc: *std.mem.Allocator) ![][]u8 {
-    const args = std.process.argsAlloc(alloc) catch |err| {
-        std.debug.warn("Out of memory: {}\n", .{err});
-        return error.OutOfMemory;
-    };
-
-    return args;
-}
-
 fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
     var array = std.ArrayList([]u8).init(allocator);
     var buffer : [BUFSIZ]u8 = undefined;
@@ -127,20 +117,40 @@ fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
 }
 
 pub fn main() anyerror!void {
-    var document01 = Document.array_init();
-    var document02 = Document.object_init();
+    var stdout = std.io.getStdOut().outStream();
 
-    var args = try readArgs(&arena.allocator);
-    for (args[1..]) |arg| {
-        try document01.push_element(arg);
-        try document02.push_element(arg);
+    var cli = try args.parseForCurrentProcess(struct {
+        @"object": bool = false,
+        @"array": bool = false, 
+        help: bool = false,
+
+        pub const shorthands = .{
+            .a = "array",
+            .o = "object",
+            .h = "help",
+        };
+    }, &arena.allocator);
+    defer cli.deinit();
+
+    if (cli.options.help) {
+        try stdout.print(
+            "{} [--help] [--object] [--array] [ARG]...\n",
+            .{std.fs.path.basename(cli.executable_name.?)},
+        );
+        try stdout.writeAll(@embedFile("cli.help.txt"));
+
+        return;
+    }
+    
+    var document = if (cli.options.array) Document.array_init() else Document.object_init();
+    for (cli.positionals) |arg| {
+        _ = try document.push_element(arg);
     }
 
-    try document01.printStdOut();
-    try document02.printStdOut();
-    var x = try document01.stringify();
-    defer x.deinit();
-    std.debug.warn("ups: {}", .{ x });
+    var string = try document.stringify();
+    defer arena.allocator.free(string);
+
+    try stdout.writeAll(string);
 }
 
 
