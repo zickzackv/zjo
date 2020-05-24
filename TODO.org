@@ -9,8 +9,18 @@
   // ...
   #+END_SRC
 
-* TODO Use arguments parser for argument parsing 
+* TODO Adjust build to include zig-args
+  The gurl project contains an example adding an external depency
+  manually and with zpm. Use the manual way first. zig-args is the
+  only dependency right now!
+
+* DONE Use arguments parser for argument parsing 
+  - State "DONE"       from "TODO"       [2020-05-24 Sun 22:29]
   The are multiple argument parser to choose from. Choose wisely.
+  + https://github.com/MasterQ32/zig-args
+    Was updated some days ago. Is used a simple project called gurl.
+  - https://github.com/Hejsil/zig-clap
+
 * TODO pr for json api changes
   Found a simple regression in the +fn std.json.dump+ function. I do
   not use this function anymore, but the version zig relead 0.6.0 does

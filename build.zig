@@ -12,12 +12,14 @@ pub fn build(b: *Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const exe = b.addExecutable("json", "src/main.zig");
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
-    exe.install();
+    const zjo = b.addExecutable("zjo", "src/main.zig");
+    
+    zjo.setTarget(target);
+    zjo.setBuildMode(mode);
+    zjo.addPackagePath("args", "./zig-args/args.zig");
+    zjo.install();
 
-    const run_cmd = exe.run();
+    const run_cmd = zjo.run();
     run_cmd.step.dependOn(b.getInstallStep());
 
     // you can now call run with the following command line
