@@ -24,6 +24,8 @@ const Document = union(DocumentTag) {
     object: Value,
 
     /// general init
+    /// Initialize the Document with `Document.init(.array)` or
+    /// `Document.init(.oject)`
     pub fn init(x: DocumentTag) Self {
         switch(x) {
             DocumentTag.array => return array_init(),
@@ -31,6 +33,7 @@ const Document = union(DocumentTag) {
         }
     }
 
+    
     /// initialize as array document
     fn array_init() Self {
         var value = Value{ .Array = std.json.Array.init(&arena.allocator) };
@@ -47,7 +50,7 @@ const Document = union(DocumentTag) {
             .object = value
         };
     }
-    
+
     /// Adds new element to the document
     pub fn push_element(self: *Self, string: []const u8) !void {
         switch (self.*) {
@@ -100,18 +103,21 @@ const Document = union(DocumentTag) {
 
     /// adds new element to the object document
     fn appendToObject(self: *Self, keyValue: [] const u8) !void {
-
         var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
         var key: []const u8 =  undefined;
-        var value: []const u8 = undefined;
+        var value: Value = undefined;
         
         if (segments.next()) |k| {
             key = k;
         }
 
-        value = segments.rest();
-        
-        _ = try self.object.Object.put(key, std.json.Value{ .String = value });
+        if (segments.next()) |v| {
+            value = Value{ .String = v };
+        } else {
+            value = @as(Value, .Null);
+        }
+
+        _ = try self.object.Object.put(key, value); 
 
         return;
     }    
@@ -155,7 +161,8 @@ pub fn main() anyerror!void {
         return;
     }
     
-    var document = if (cli.options.array) Document.init(.array) else Document.init(.object);
+    var document = if (cli.options.array) Document.init(.array)
+                   else Document.init(.object);
     for (cli.positionals) |arg| {
         _ = try document.push_element(arg);
     }
@@ -170,11 +177,17 @@ pub fn main() anyerror!void {
 const testing = std.testing;
 const assert = std.debug.assert;
 
+
 test "parse json"  {
-    const allocator = std.testing.allocator;
-    var arena  = std.heap.ArenaAllocator.init(allocator);
-    defer arena.deinit();
     var p = std.json.Parser.init(&arena.allocator, false);
+
+    {
+        defer p.reset();
+        const s = "null";
+        
+        var j = try p.parse(s);
+        assert(j.root == .Null);
+    }
 
     {
         defer p.reset();
@@ -192,7 +205,7 @@ test "parse json"  {
     }
     {
         defer p.reset();
-        const s = \\ 1231233
+        const s = "1231233"
         ;
         var j = try p.parse(s);
         assert(j.root == .Integer);
