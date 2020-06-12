@@ -112,7 +112,8 @@ const Document = union(DocumentTag) {
         }
 
         if (segments.next()) |v| {
-            value = Value{ .String = v };
+            const tree = try parseValue(v);
+            value = tree.root;
         } else {
             value = @as(Value, .Null);
         }
@@ -122,6 +123,32 @@ const Document = union(DocumentTag) {
         return;
     }    
 };
+
+fn parseValue(value:  []const u8) !ValueTree {
+    var p = std.json.Parser.init(&arena.allocator, false);
+    defer p.deinit();
+
+    if (p.parse(value)) |result| {
+        return result;
+    } else |err| switch (err) {
+        // parsing of the json top value failed,
+        // make it a null
+        error.InvalidTopLevel => {
+            return ValueTree {
+                .arena = arena,
+                .root = Value { .String = value }
+            };
+        }, 
+        // any other error should abort the program.
+        else => {
+            std.debug.warn("\nError in parsing json value '{}': {}\n", .{ value, err });
+            return ValueTree {
+                .arena = arena,
+                .root = @as(Value, .Null)
+            };
+        }
+    }
+}
 
 fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
     var array = std.ArrayList([]u8).init(allocator);
@@ -177,10 +204,8 @@ pub fn main() anyerror!void {
 const testing = std.testing;
 const assert = std.debug.assert;
 
-
 test "parse json"  {
     var p = std.json.Parser.init(&arena.allocator, false);
-
     {
         defer p.reset();
         const s = "null";
@@ -188,14 +213,13 @@ test "parse json"  {
         var j = try p.parse(s);
         assert(j.root == .Null);
     }
-
     {
         defer p.reset();
         const s = \\""
         ;
         var j = try p.parse(s);
+        //        std.debug.warn("\n...{}\n", .{ @tagName(j.root) });
     }
-
     {
         defer p.reset();
         const s = \\ "quoted=string"
@@ -217,5 +241,66 @@ test "parse json"  {
         var j = try p.parse(s);
         assert(j.root == .String);
     }
+    {
+        defer p.reset();
+        const s = "einfach nur text";
+        var j: ValueTree = undefined;
+        
+        if (p.parse(s)) |result| {
+            j = result;
+        } else |err| switch (err) {
+            error.InvalidTopLevel => {
+                j = ValueTree {
+                    .arena = arena,
+                    .root = @as(Value, .Null)
+                };
+            }, // ok
+            else => return err
+        }
+        
+        assert(j.root == .Null);
+    }
+
+}
+
+test "parse value part of object" {
+
+    {
+        const value = \\ "ein einfacher String"
+        ;
+        const result = try parseValue(value);
+        std.debug.warn("\n\nresult: {}\n", .{ result.root });
+    }
+
+    {
+        const value = \\ ohne quoates
+        ;
+        const result = try parseValue(value);
+        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+    }
+    
+    {
+        const value = \\ 12343
+        ;
+        const result = try parseValue(value);
+        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+    }
+    
+    {
+        const value = \\ { "key1": "value1",
+            \\ "key2": 123123 }
+        ;
+        const result = try parseValue(value);
+        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+    }
+
+    {
+        const value = \\ { "key1": "value1",
+            \\ "key2": 123123, }
+        ;
+        const result = try parseValue(value);
+        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+    }
+
 
 }
