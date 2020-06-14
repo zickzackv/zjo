@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 const ValueTree = std.json.ValueTree;
 const Value = std.json.Value;
-const stdin = &std.io.getStdIn().inStream();
+const stdout = std.io.getStdOut().outStream();
 
 const args = @import("args");
 
@@ -66,31 +66,27 @@ const Document = union(DocumentTag) {
 
     /// prints Document outstream
     fn print(self: Self, outstream: var) !void {
-        var writer = std.json.writeStream(outstream, 10);
-
+        const outputOptions = std.json.StringifyOptions{ .whitespace = null };
         switch(self) {
             Self.array => |array| {
-               _ = try writer.emitJson(array);
+                _ = try std.json.stringify(array, outputOptions, stdout);
             },
             Self.object => |object| {
-                _ = try writer.emitJson(object);
+                _ = try std.json.stringify(object, outputOptions, stdout);
             }
         }
     }
 
     /// prints Document to stdout!
     fn printStdOut(self: Self) !void {
-        var outstream = std.io.getStdOut().outStream();
-        try self.print(outstream);
+        try self.print(std.io.getStdOut().outStream());
     }
-
 
     /// String representation of the document
     /// caller ownes the string!
     fn stringify(self: Self) ![]u8 {
         var x = std.ArrayList(u8).init(&arena.allocator);
         var stream = x.outStream();
-        var writer = std.json.writeStream(stream, 10);
         _ = try self.print(stream);
         return x.toOwnedSlice();
     }
@@ -163,8 +159,6 @@ fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
 }
 
 pub fn main() anyerror!void {
-    var stdout = std.io.getStdOut().outStream();
-
     var cli = try args.parseForCurrentProcess(struct {
         @"object": bool = false,
         @"array": bool = false, 
@@ -194,10 +188,7 @@ pub fn main() anyerror!void {
         _ = try document.push_element(arg);
     }
 
-    var string = try document.stringify();
-    defer arena.allocator.free(string);
-
-    try stdout.writeAll(string);
+    try document.printStdOut();
 }
 
 

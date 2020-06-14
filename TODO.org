@@ -1,5 +1,12 @@
 #+TODO: TODO(t) STARTED(s@/!) | DONE(d!) CANCELED(c@)
 
+* DONE use std.json.stringify for printing the document to StdOut
+  - State "DONE"       from "TODO"       [2020-06-14 Sun 22:22]
+  currently zjo uses json/write_stream.zig to ouput the generated
+  documents. This API does not have an option to print the output in a
+  compact style. Thus the ouput can not be parsed as input of zjo. 
+
+  Use the std.json.stringify function to output a compact json document.
 * DONE find out how to write one initializer functions instead of two
   
   - State "DONE"       from "TODO"       [2020-05-25 Mon 00:16]
@@ -64,7 +71,8 @@
 	}
     }
   #+END_SRC
-* TODO Parsing json from parameters
+* DONE Parsing json from parameters
+  - State "DONE"       from "TODO"       [2020-06-12 Fri 15:26]
   When creating complex json documents one needs to cascade zjo calls. 
   The following example
 
