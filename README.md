@@ -8,17 +8,20 @@
 For building zjo a [zig compiler version 0.6.0](https://ziglang.org/download/release-0.6.0)
 or newer is needed.  Clone the git repo with its submodule(s).
 
-        git clone --recurse-submodules https://zickzackv/zjo
+        $ git clone --recurse-submodules https://zickzackv/zjo
 
 Compile the project with 
-
-        zig build
+	
+	    $ cd zjo
+		$ zig build
+		$ ./zig-cache/bin/zjo
 		
 
 ## Install
 
 Install the binary into a location of your path and use it. 
 
+    $ cp ./zig-cache/bin/zjo ~/.local/bin
 
 ## Usage
 
@@ -109,8 +112,6 @@ This is my first project in ZIG. Its whole purpose was to learn ZIG
 and not to write the perfect clone of a existing tool. I learned a lot
 about using ZIG and remembered my old C progamming days in
 university. That was fun!
-
-
 
 
 Fabian 
