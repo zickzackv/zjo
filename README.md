@@ -18,7 +18,7 @@ Compile the project with
 
 ## License
 
-TBD: Probably MIT
+TBD: Probably MIT License
 
 
 ## Install
