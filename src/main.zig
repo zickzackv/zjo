@@ -13,13 +13,12 @@ var arena = ArenaAllocator.init(std.heap.page_allocator);
 
 ///Either array or object json document.
 const DocumentTag = enum {
-    array,
-    object
+    array, object
 };
 
 const Document = union(DocumentTag) {
     const Self = @This();
-    
+
     array: Value,
     object: Value,
 
@@ -27,28 +26,23 @@ const Document = union(DocumentTag) {
     /// Initialize the Document with `Document.init(.array)` or
     /// `Document.init(.oject)`
     pub fn init(x: DocumentTag) Self {
-        switch(x) {
+        switch (x) {
             DocumentTag.array => return array_init(),
-            DocumentTag.object => return object_init()
+            DocumentTag.object => return object_init(),
         }
     }
 
-    
     /// initialize as array document
     fn array_init() Self {
         var value = Value{ .Array = std.json.Array.init(&arena.allocator) };
-        return Document {
-            .array = value
-        };
+        return Document{ .array = value };
     }
 
     /// Initialize as object document
     fn object_init() Self {
         var value = Value{ .Object = std.json.ObjectMap.init(&arena.allocator) };
-        
-        return Self{
-            .object = value
-        };
+
+        return Self{ .object = value };
     }
 
     /// Adds new element to the document
@@ -57,23 +51,23 @@ const Document = union(DocumentTag) {
             Self.array => |*array| {
                 try self.appendToArray(string);
             },
-            Self.object => |*object|{
+            Self.object => |*object| {
                 try self.appendToObject(string);
             },
-            else => unreachable
+            else => unreachable,
         }
     }
 
     /// prints Document outstream
     fn print(self: Self, outstream: var) !void {
         const outputOptions = std.json.StringifyOptions{ .whitespace = null };
-        switch(self) {
+        switch (self) {
             Self.array => |array| {
                 _ = try std.json.stringify(array, outputOptions, stdout);
             },
             Self.object => |object| {
                 _ = try std.json.stringify(object, outputOptions, stdout);
-            }
+            },
         }
     }
 
@@ -98,11 +92,11 @@ const Document = union(DocumentTag) {
     }
 
     /// adds new element to the object document
-    fn appendToObject(self: *Self, keyValue: [] const u8) !void {
+    fn appendToObject(self: *Self, keyValue: []const u8) !void {
         var segments: std.mem.TokenIterator = std.mem.tokenize(keyValue, "=:");
-        var key: []const u8 =  undefined;
+        var key: []const u8 = undefined;
         var value: Value = undefined;
-        
+
         if (segments.next()) |k| {
             key = k;
         }
@@ -114,13 +108,13 @@ const Document = union(DocumentTag) {
             value = @as(Value, .Null);
         }
 
-        _ = try self.object.Object.put(key, value); 
+        _ = try self.object.Object.put(key, value);
 
         return;
-    }    
+    }
 };
 
-fn parseValue(value:  []const u8) !ValueTree {
+fn parseValue(value: []const u8) !ValueTree {
     var p = std.json.Parser.init(&arena.allocator, false);
     defer p.deinit();
 
@@ -130,29 +124,29 @@ fn parseValue(value:  []const u8) !ValueTree {
         // parsing of the json top value failed,
         // make it a null
         error.InvalidTopLevel => {
-            return ValueTree {
+            return ValueTree{
                 .arena = arena,
-                .root = Value { .String = value }
+                .root = Value{ .String = value },
             };
-        }, 
+        },
         // any other error should abort the program.
         else => {
             std.debug.warn("\nError in parsing json value '{}': {}\n", .{ value, err });
-            return ValueTree {
+            return ValueTree{
                 .arena = arena,
-                .root = @as(Value, .Null)
+                .root = @as(Value, .Null),
             };
-        }
+        },
     }
 }
 
 fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
     var array = std.ArrayList([]u8).init(allocator);
-    var buffer : [BUFSIZ]u8 = undefined;
+    var buffer: [BUFSIZ]u8 = undefined;
 
     while (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |line| {
         var copy = try std.mem.dupe(allocator, u8, line);
-        _ =  try array.append(copy);
+        _ = try array.append(copy);
     }
 
     return array;
@@ -161,7 +155,7 @@ fn readLines(allocator: *Allocator) !std.ArrayList([]u8) {
 pub fn main() anyerror!void {
     var cli = try args.parseForCurrentProcess(struct {
         @"object": bool = false,
-        @"array": bool = false, 
+        @"array": bool = false,
         help: bool = false,
 
         pub const shorthands = .{
@@ -181,9 +175,8 @@ pub fn main() anyerror!void {
 
         return;
     }
-    
-    var document = if (cli.options.array) Document.init(.array)
-                   else Document.init(.object);
+
+    var document = if (cli.options.array) Document.init(.array) else Document.init(.object);
     for (cli.positionals) |arg| {
         _ = try document.push_element(arg);
     }
@@ -191,43 +184,44 @@ pub fn main() anyerror!void {
     try document.printStdOut();
 }
 
-
 const testing = std.testing;
 const assert = std.debug.assert;
 
-test "parse json"  {
+test "parse json" {
     var p = std.json.Parser.init(&arena.allocator, false);
     {
         defer p.reset();
         const s = "null";
-        
+
         var j = try p.parse(s);
         assert(j.root == .Null);
     }
     {
         defer p.reset();
-        const s = \\""
+        const s =
+            \\""
         ;
         var j = try p.parse(s);
         //        std.debug.warn("\n...{}\n", .{ @tagName(j.root) });
     }
     {
         defer p.reset();
-        const s = \\ "quoted=string"
+        const s =
+            \\ "quoted=string"
         ;
         var j = try p.parse(s);
         assert(j.root == .String);
     }
     {
         defer p.reset();
-        const s = "1231233"
-        ;
+        const s = "1231233";
         var j = try p.parse(s);
         assert(j.root == .Integer);
     }
     {
         defer p.reset();
-        const s = \\ "123"
+        const s =
+            \\ "123"
         ;
         var j = try p.parse(s);
         assert(j.root == .String);
@@ -236,62 +230,63 @@ test "parse json"  {
         defer p.reset();
         const s = "einfach nur text";
         var j: ValueTree = undefined;
-        
+
         if (p.parse(s)) |result| {
             j = result;
         } else |err| switch (err) {
             error.InvalidTopLevel => {
-                j = ValueTree {
+                j = ValueTree{
                     .arena = arena,
-                    .root = @as(Value, .Null)
+                    .root = @as(Value, .Null),
                 };
             }, // ok
-            else => return err
+            else => return err,
         }
-        
+
         assert(j.root == .Null);
     }
-
 }
 
 test "parse value part of object" {
-
     {
-        const value = \\ "ein einfacher String"
+        const value =
+            \\ "ein einfacher String"
         ;
         const result = try parseValue(value);
-        std.debug.warn("\n\nresult: {}\n", .{ result.root });
+        std.debug.warn("\n\nresult: {}\n", .{result.root});
     }
 
     {
-        const value = \\ ohne quoates
+        const value =
+            \\ ohne quoates
         ;
         const result = try parseValue(value);
-        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+        std.debug.warn("\n\nresult: {}\n", .{result.root});
     }
-    
+
     {
-        const value = \\ 12343
+        const value =
+            \\ 12343
         ;
         const result = try parseValue(value);
-        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+        std.debug.warn("\n\nresult: {}\n", .{result.root});
     }
-    
+
     {
-        const value = \\ { "key1": "value1",
+        const value =
+            \\ { "key1": "value1",
             \\ "key2": 123123 }
         ;
         const result = try parseValue(value);
-        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+        std.debug.warn("\n\nresult: {}\n", .{result.root});
     }
 
     {
-        const value = \\ { "key1": "value1",
+        const value =
+            \\ { "key1": "value1",
             \\ "key2": 123123, }
         ;
         const result = try parseValue(value);
-        std.debug.warn("\n\nresult: {}\n", .{ result.root });   
+        std.debug.warn("\n\nresult: {}\n", .{result.root});
     }
-
-
 }
