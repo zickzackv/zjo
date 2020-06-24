@@ -16,6 +16,11 @@ Compile the project with
 		$ ./zig-cache/bin/zjo
 		
 
+## License
+
+TBD: Probably MIT
+
+
 ## Install
 
 Install the binary into a location of your path and use it. 
