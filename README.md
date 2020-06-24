@@ -1,11 +1,10 @@
-# A uncomplete clone of [jo](https://github.com/jpmens/jo) in [ZIG](https://ziglang.org)
+# incomplete [jo](https://github.com/jpmens/jo) clone in [ZIG](https://ziglang.org)
 
-[jo](https://github.com/jpmens/jo) is a simple cli tool for generating JSON from the shell. It is written in C
-[ZIG](https://ziglang.org) is a new programming language "trying to fix C". 
+An incomplete clone of [jo](https://github.com/jpmens/jo) written in [zig](https://ziglang.org).
 
 ## Build
 
-For building zjo a [zig compiler version 0.6.0](https://ziglang.org/download/release-0.6.0)
+For building zjo a [zig compiler version 0.6.0](https://ziglang.org/download#release-0.6.0)
 or newer is needed.  Clone the git repo with its submodule(s).
 
         $ git clone --recurse-submodules https://zickzackv/zjo
