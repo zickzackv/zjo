@@ -59,7 +59,7 @@ const Document = union(DocumentTag) {
     }
 
     /// prints Document outstream
-    fn print(self: Self, outstream: var) !void {
+    fn print(self: Self, outstream: anytype) !void {
         const outputOptions = std.json.StringifyOptions{ .whitespace = null };
         switch (self) {
             Self.array => |array| {
