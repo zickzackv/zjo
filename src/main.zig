@@ -114,6 +114,9 @@ const Document = union(DocumentTag) {
     }
 };
 
+/// parses values of key value pairs.  trying to interpret the value
+/// as json object if an error occours the value is treated as a
+/// string value.
 fn parseValue(value: []const u8) !ValueTree {
     var p = std.json.Parser.init(&arena.allocator, false);
     defer p.deinit();
@@ -123,13 +126,13 @@ fn parseValue(value: []const u8) !ValueTree {
     } else |err| switch (err) {
         // parsing of the json top value failed,
         // make it a null
-        error.InvalidTopLevel => {
+        error.InvalidTopLevel, error.InvalidLiteral => {
             return ValueTree{
                 .arena = arena,
                 .root = Value{ .String = value },
             };
         },
-        // any other error should abort the program.
+        // any other error should abort the parser.
         else => {
             std.debug.warn("\nError in parsing json value '{}': {}\n", .{ value, err });
             return ValueTree{

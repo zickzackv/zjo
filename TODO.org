@@ -1,5 +1,18 @@
 #+TODO: TODO(t) STARTED(s@/!) | DONE(d!) CANCELED(c@)
 
+* DONE Fix parsing values of invalid literals
+  - State "DONE"       from "TODO"       [2020-07-20 Mon 23:30]
+  The following invocation 
+  #+BEGIN_SRC shell
+  zjo -o a=two 
+  #+END_SRC
+  of zjo returns a 'null' value instead of the following hash. 
+  #+BEGIN_SRC 
+  {"a":"two"}
+  #+END_SRC
+  The json parser expects a literal (non string) value starting with a
+  letter 't' to be followed by the letters 'r', 'u', 'e'. Otherwise it
+  will yield an error.
 * DONE use std.json.stringify for printing the document to StdOut
   - State "DONE"       from "TODO"       [2020-06-14 Sun 22:22]
   currently zjo uses json/write_stream.zig to ouput the generated
